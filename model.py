@@ -1,4 +1,4 @@
-import math
+import math, pdb
 
 import numpy as np
 
@@ -66,7 +66,6 @@ class ActorCritic(torch.nn.Module):
         x = F.elu(self.conv2(x))
         x = F.elu(self.conv3(x))
         x = F.elu(self.conv4(x))
-
         x = x.view(-1, 32 * 3 * 3)
         hx, cx = self.lstm(x, (hx, cx))
         x = hx

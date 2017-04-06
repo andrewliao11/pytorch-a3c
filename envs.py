@@ -6,7 +6,7 @@ from universe import vectorized
 from universe.wrappers import Unvectorize, Vectorize
 
 import cv2
-
+import pdb
 
 # Taken from https://github.com/openai/universe-starter-agent
 def create_atari_env(env_id):
@@ -18,7 +18,7 @@ def create_atari_env(env_id):
         env = Unvectorize(env)
     return env
 
-
+# process each frame
 def _process_frame42(frame):
     frame = frame[34:34 + 160, :160]
     # Resize by half, then down to 42x42 (essentially mipmapping). If
@@ -37,6 +37,7 @@ class AtariRescale42x42(vectorized.ObservationWrapper):
 
     def __init__(self, env=None):
         super(AtariRescale42x42, self).__init__(env)
+	# convert the observation shape to 
         self.observation_space = Box(0.0, 1.0, [1, 42, 42])
 
     def _observation(self, observation_n):
@@ -53,6 +54,7 @@ class NormalizedEnv(vectorized.ObservationWrapper):
         self.num_steps = 0
 
     def _observation(self, observation_n):
+	# calculate the average of mean/std of obsesrvation
         for observation in observation_n:
             self.num_steps += 1
             self.state_mean = self.state_mean * self.alpha + \

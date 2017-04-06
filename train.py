@@ -38,9 +38,10 @@ def train(rank, args, shared_model, optimizer=None):
     episode_length = 0
     while True:
         episode_length += 1
-        # Sync with the shared model
+        # Sync with the shared model every iteration
         model.load_state_dict(shared_model.state_dict())
         if done:
+	    # initialization
             cx = Variable(torch.zeros(1, 256))
             hx = Variable(torch.zeros(1, 256))
         else:
@@ -64,7 +65,9 @@ def train(rank, args, shared_model, optimizer=None):
             log_prob = log_prob.gather(1, Variable(action))
 
             state, reward, done, _ = env.step(action.numpy())
+	    # prevent stuck agents
             done = done or episode_length >= args.max_episode_length
+	    # reward shaping
             reward = max(min(reward, 1), -1)
 
             if done:
@@ -89,12 +92,14 @@ def train(rank, args, shared_model, optimizer=None):
         value_loss = 0
         R = Variable(R)
         gae = torch.zeros(1, 1)
+	# calculate the rewards from the terminal state
         for i in reversed(range(len(rewards))):
             R = args.gamma * R + rewards[i]
             advantage = R - values[i]
             value_loss = value_loss + 0.5 * advantage.pow(2)
 
             # Generalized Advantage Estimataion
+	    # convert the data into xxx.data will stop the gradient
             delta_t = rewards[i] + args.gamma * \
                 values[i + 1].data - values[i].data
             gae = gae * args.gamma * args.tau + delta_t
