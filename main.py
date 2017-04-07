@@ -9,12 +9,13 @@ import torch.optim as optim
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.nn.functional as F
+from six.moves import queue
+from collections import deque
 from envs import create_atari_env
 from model import ActorCritic
 from train import train
 from test import test
 import my_optim
-import pdb
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -22,6 +23,8 @@ import pdb
 parser = argparse.ArgumentParser(description='A3C')
 parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                     help='learning rate (default: 0.0001)')
+parser.add_argument('--batch_size', type=int, default=32, 
+		    help='required for batch.a3c (default: 32)')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor for rewards (default: 0.99)')
 parser.add_argument('--tau', type=float, default=1.00, metavar='T',
@@ -56,6 +59,12 @@ if __name__ == '__main__':
         optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
         optimizer.share_memory()
 
+    # use batch.a3c
+    #loss_master = deque()
+    # Queue: It is especially useful in threaded programming when information must
+    # be exchanged safely between multiple threads.
+    loss_master = queue.Queue(maxsize=args.batch_size*args.num_processes*10)
+
     processes = []
 
     p = mp.Process(target=test, args=(args.num_processes, args, shared_model))
@@ -63,7 +72,7 @@ if __name__ == '__main__':
     processes.append(p)
 
     for rank in range(0, args.num_processes):
-        p = mp.Process(target=train, args=(rank, args, shared_model, optimizer))
+        p = mp.Process(target=train, args=(rank, args, shared_model, loss_master, optimizer))
         p.start()
         processes.append(p)
     for p in processes:

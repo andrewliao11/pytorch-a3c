@@ -18,7 +18,7 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 
-def train(rank, args, shared_model, optimizer=None):
+def train(rank, args, shared_model, loss_master, optimizer=None):
     torch.manual_seed(args.seed + rank)
 
     env = create_atari_env(args.env_name)
@@ -88,15 +88,13 @@ def train(rank, args, shared_model, optimizer=None):
             R = value.data
 
         values.append(Variable(R))
-        policy_loss = 0
-        value_loss = 0
         R = Variable(R)
         gae = torch.zeros(1, 1)
 	# calculate the rewards from the terminal state
         for i in reversed(range(len(rewards))):
             R = args.gamma * R + rewards[i]
             advantage = R - values[i]
-            value_loss = value_loss + 0.5 * advantage.pow(2)
+            value_loss = 0.5 * advantage.pow(2)
 
             # Generalized Advantage Estimataion
 	    # convert the data into xxx.data will stop the gradient
@@ -104,13 +102,19 @@ def train(rank, args, shared_model, optimizer=None):
                 values[i + 1].data - values[i].data
             gae = gae * args.gamma * args.tau + delta_t
 
-            policy_loss = policy_loss - \
-                log_probs[i] * Variable(gae) - 0.01 * entropies[i]
+            policy_loss = -log_probs[i] * Variable(gae) - 0.01 * entropies[i]
+	    loss_master.put(policy_loss + 0.5 * value_loss)
 
-        optimizer.zero_grad()
+	# check if the master queue enough data
+	if loss_master.qsize > args.batch_size:
+	    loss = 0
+	    for _ in range(args.batch_size): 
+	    	loss += loss_master.get()
+            optimizer.zero_grad()
 
-        (policy_loss + 0.5 * value_loss).backward()
-        torch.nn.utils.clip_grad_norm(model.parameters(), 40)
+	    # might popleft the same node
+            loss.backward(retain_variables=True)
+            torch.nn.utils.clip_grad_norm(model.parameters(), 40)
 
-        ensure_shared_grads(model, shared_model)
-        optimizer.step()
+            ensure_shared_grads(model, shared_model)
+            optimizer.step()
