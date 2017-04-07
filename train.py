@@ -103,13 +103,14 @@ def train(rank, args, shared_model, loss_master, optimizer=None):
             gae = gae * args.gamma * args.tau + delta_t
 
             policy_loss = -log_probs[i] * Variable(gae) - 0.01 * entropies[i]
-	    loss_master.put(policy_loss + 0.5 * value_loss)
+	    #loss_master.put(policy_loss + 0.5 * value_loss)
+	    loss_master.append(policy_loss + 0.5 * value_loss)
 
 	# check if the master queue enough data
-	if loss_master.qsize > args.batch_size:
+	if len(loss_master) > args.batch_size:
 	    loss = 0
 	    for _ in range(args.batch_size): 
-	    	loss += loss_master.get()
+	    	loss += loss_master.popleft()
             optimizer.zero_grad()
 
 	    # might popleft the same node
