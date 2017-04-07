@@ -23,8 +23,8 @@ import my_optim
 parser = argparse.ArgumentParser(description='A3C')
 parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                     help='learning rate (default: 0.0001)')
-parser.add_argument('--batch_size', type=int, default=32, 
-		    help='required for batch.a3c (default: 32)')
+parser.add_argument('--batch_size', type=int, default=128, 
+		    help='required for batch.a3c (default: 128)')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor for rewards (default: 0.99)')
 parser.add_argument('--tau', type=float, default=1.00, metavar='T',
