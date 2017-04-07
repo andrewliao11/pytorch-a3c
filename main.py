@@ -60,10 +60,10 @@ if __name__ == '__main__':
         optimizer.share_memory()
 
     # use batch.a3c
-    loss_master = deque()
+    #loss_master = deque()
     # Queue: It is especially useful in threaded programming when information must
     # be exchanged safely between multiple threads.
-    #loss_master = queue.Queue(maxsize=args.batch_size*args.num_processes*10)
+    loss_master = queue.Queue(maxsize=args.batch_size*args.num_processes*10)
 
     processes = []
 

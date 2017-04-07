@@ -9,7 +9,7 @@ from envs import create_atari_env
 from model import ActorCritic
 from torch.autograd import Variable
 from torchvision import datasets, transforms
-
+from six.moves import queue
 
 def ensure_shared_grads(model, shared_model):
     for param, shared_param in zip(model.parameters(), shared_model.parameters()):
@@ -103,9 +103,24 @@ def train(rank, args, shared_model, loss_master, optimizer=None):
             gae = gae * args.gamma * args.tau + delta_t
 
             policy_loss = -log_probs[i] * Variable(gae) - 0.01 * entropies[i]
-	    #loss_master.put(policy_loss + 0.5 * value_loss)
-	    loss_master.append(policy_loss + 0.5 * value_loss)
+	    loss_master.put(policy_loss + 0.5 * value_loss)
+	    #loss_master.append(policy_loss + 0.5 * value_loss)
 
+	loss = []
+	while len(loss) < args.batch_size:
+	    try:
+		loss.append(loss_master.get_nowait())
+	    except queue.Empty:
+		break
+	if len(loss) > 0:
+	    loss = sum(loss)
+	    optimizer.zero_grad()
+	    loss.backward(retain_variables=True)
+	    torch.nn.utils.clip_grad_norm(model.parameters(), 40)
+	    ensure_shared_grads(model, shared_model)
+	    optimizer.step()
+	
+	'''
 	# check if the master queue enough data
 	if len(loss_master) > args.batch_size:
 	    loss = 0
@@ -119,3 +134,4 @@ def train(rank, args, shared_model, loss_master, optimizer=None):
 
             ensure_shared_grads(model, shared_model)
             optimizer.step()
+	'''
