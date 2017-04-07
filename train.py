@@ -120,18 +120,3 @@ def train(rank, args, shared_model, loss_master, optimizer=None):
 	    ensure_shared_grads(model, shared_model)
 	    optimizer.step()
 	
-	'''
-	# check if the master queue enough data
-	if len(loss_master) > args.batch_size:
-	    loss = 0
-	    for _ in range(args.batch_size): 
-	    	loss += loss_master.popleft()
-            optimizer.zero_grad()
-
-	    # might popleft the same node
-            loss.backward(retain_variables=True)
-            torch.nn.utils.clip_grad_norm(model.parameters(), 40)
-
-            ensure_shared_grads(model, shared_model)
-            optimizer.step()
-	'''

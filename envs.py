@@ -26,10 +26,9 @@ def _process_frame42(frame):
     # aren't close enough to the pixel boundary.
     frame = cv2.resize(frame, (80, 80))
     frame = cv2.resize(frame, (42, 42))
-    frame = frame.mean(2)
     frame = frame.astype(np.float32)
     frame *= (1.0 / 255.0)
-    frame = np.reshape(frame, [1, 42, 42])
+    frame = np.transpose(frame, [2, 0, 1])
     return frame
 
 
@@ -38,7 +37,7 @@ class AtariRescale42x42(vectorized.ObservationWrapper):
     def __init__(self, env=None):
         super(AtariRescale42x42, self).__init__(env)
 	# convert the observation shape to 
-        self.observation_space = Box(0.0, 1.0, [1, 42, 42])
+	self.observation_space = Box(0.0, 1.0, [3, 42, 42])
 
     def _observation(self, observation_n):
         return [_process_frame42(observation) for observation in observation_n]
@@ -46,6 +45,7 @@ class AtariRescale42x42(vectorized.ObservationWrapper):
 
 class NormalizedEnv(vectorized.ObservationWrapper):
 
+    # TODO: separate the RGB channel
     def __init__(self, env=None):
         super(NormalizedEnv, self).__init__(env)
         self.state_mean = 0

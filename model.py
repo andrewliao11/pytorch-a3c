@@ -1,4 +1,4 @@
-import math, pdb
+import math
 
 import numpy as np
 
@@ -40,7 +40,6 @@ class ActorCritic(torch.nn.Module):
         self.conv2 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
         self.conv3 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
         self.conv4 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
-
         self.lstm = nn.LSTMCell(32 * 3 * 3, 256)
 
         num_outputs = action_space.n
