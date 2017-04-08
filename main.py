@@ -29,6 +29,8 @@ parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor for rewards (default: 0.99)')
 parser.add_argument('--tau', type=float, default=1.00, metavar='T',
                     help='parameter for GAE (default: 1.00)')
+parser.add_argument('--model_name', type=str, default='a3c', 
+		    help='used to save log file and model (default: a3c)')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--num-processes', type=int, default=4, metavar='N',
@@ -60,13 +62,13 @@ if __name__ == '__main__':
         optimizer.share_memory()
 
     # use batch.a3c
-    #loss_master = deque()
     # Queue: It is especially useful in threaded programming when information must
     # be exchanged safely between multiple threads.
     loss_master = queue.Queue(maxsize=args.batch_size*args.num_processes*10)
 
     processes = []
 
+    log_filename = args.env_name+"."+args.model_name+".log"
     p = mp.Process(target=test, args=(args.num_processes, args, shared_model))
     p.start()
     processes.append(p)
