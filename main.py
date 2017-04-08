@@ -22,10 +22,14 @@ import pdb
 parser = argparse.ArgumentParser(description='A3C')
 parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                     help='learning rate (default: 0.0001)')
+parser.add_argument('--batch_size', type=int, default=128, 
+		    help='required for batch.a3c (default: 128)')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor for rewards (default: 0.99)')
 parser.add_argument('--tau', type=float, default=1.00, metavar='T',
                     help='parameter for GAE (default: 1.00)')
+parser.add_argument('--model_name', type=str, default='a3c', 
+		    help='used to save log file and model (default: a3c)')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--num-processes', type=int, default=4, metavar='N',
@@ -38,7 +42,6 @@ parser.add_argument('--env-name', default='PongDeterministic-v3', metavar='ENV',
                     help='environment to train on (default: PongDeterministic-v3)')
 parser.add_argument('--no-shared', default=False, metavar='O',
                     help='use an optimizer without shared momentum.')
-
 
 if __name__ == '__main__':
     args = parser.parse_args()
