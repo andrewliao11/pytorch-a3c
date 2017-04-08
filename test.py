@@ -79,7 +79,7 @@ def test(rank, args, shared_model):
                 	time.strftime("%Hh %Mm %Ss",time.gmtime(time.time() - start_time)),
                 	reward_sum, episode_length)
 	        print(info_str)
-	        f.write(info_str)
+	        f.write(info_str+'\n')
                 reward_sum = 0
             	episode_length = 0
             	actions.clear()
