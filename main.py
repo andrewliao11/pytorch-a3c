@@ -42,6 +42,7 @@ parser.add_argument('--env-name', default='PongDeterministic-v3', metavar='ENV',
                     help='environment to train on (default: PongDeterministic-v3)')
 parser.add_argument('--no-shared', default=False, metavar='O',
                     help='use an optimizer without shared momentum.')
+parser.add_argument('--display', type=bool, default=False)
 
 if __name__ == '__main__':
     args = parser.parse_args()

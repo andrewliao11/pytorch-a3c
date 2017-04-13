@@ -9,14 +9,20 @@ from envs import create_atari_env
 from model import ActorCritic
 from torch.autograd import Variable
 from torchvision import datasets, transforms
+import pdb
 
-
+# global variable pi
+pi = Variable(torch.FloatTensor([math.pi]))
 def ensure_shared_grads(model, shared_model):
     for param, shared_param in zip(model.parameters(), shared_model.parameters()):
         if shared_param.grad is not None:
             return
         shared_param._grad = param.grad
 
+def normal(x, mu, sigma_sq):
+    a = ((Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
+    b = 1/(2*sigma_sq*pi).sqrt()
+    return a*b
 
 def train(rank, args, shared_model, optimizer=None):
     torch.manual_seed(args.seed + rank)
@@ -42,8 +48,8 @@ def train(rank, args, shared_model, optimizer=None):
         model.load_state_dict(shared_model.state_dict())
         if done:
 	    # initialization
-            cx = Variable(torch.zeros(1, 256))
-            hx = Variable(torch.zeros(1, 256))
+            cx = Variable(torch.zeros(1, 128))
+            hx = Variable(torch.zeros(1, 128))
         else:
             cx = Variable(cx.data)
             hx = Variable(hx.data)
@@ -54,15 +60,18 @@ def train(rank, args, shared_model, optimizer=None):
         entropies = []
 
         for step in range(args.num_steps):
-            value, logit, (hx, cx) = model(
-                (Variable(state.unsqueeze(0)), (hx, cx)))
-            prob = F.softmax(logit)
-            log_prob = F.log_softmax(logit)
-            entropy = -(log_prob * prob).sum(1)
-            entropies.append(entropy)
+	    # for mujoco, env returns DoubleTensor
+            value, mu, sigma_sq, (hx, cx) = model(
+                (Variable(state.float().unsqueeze(0).float()), (hx, cx)))
+            sigma_sq = F.softplus(sigma_sq)
+	    eps = torch.randn(mu.size())
+	    # calculate the probability
+	    action = (mu + sigma_sq.sqrt()*Variable(eps)).data
+	    prob = normal(action, mu, sigma_sq)
+	    entropy = -0.5*((sigma_sq+2*pi).log()+1).sum(1)
 
-            action = prob.multinomial().data
-            log_prob = log_prob.gather(1, Variable(action))
+            entropies.append(entropy)
+            log_prob = prob.log()
 
             state, reward, done, _ = env.step(action.numpy())
 	    # prevent stuck agents
@@ -84,7 +93,7 @@ def train(rank, args, shared_model, optimizer=None):
 
         R = torch.zeros(1, 1)
         if not done:
-            value, _, _ = model((Variable(state.unsqueeze(0)), (hx, cx)))
+            value, _, _, _ = model((Variable(state.float().unsqueeze(0)), (hx, cx)))
             R = value.data
 
         values.append(Variable(R))

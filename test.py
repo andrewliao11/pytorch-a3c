@@ -5,6 +5,7 @@ import sys
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from gym import wrappers
 from envs import create_atari_env
 from model import ActorCritic
 from torch.autograd import Variable
@@ -44,11 +45,12 @@ def test(rank, args, shared_model):
     model.eval()
 
     f, ckpt_path = setup(args)
+    env = wrappers.Monitor(env, '/tmp/{}-experiment'.format(args.env_name), force=True)
     state = env.reset()
     state = torch.from_numpy(state)
     reward_sum = 0
     done = True
-
+    #env = wrappers.Monitor(env, '/tmp/{}-experiment'.format(args.env_name), force=True)
     start_time = time.time()
     # a quick hack to prevent the agent from stucking
     actions = deque(maxlen=100)
@@ -74,6 +76,8 @@ def test(rank, args, shared_model):
             action = (mu + sigma_sq.sqrt()*Variable(eps)).data
 
             state, reward, done, _ = env.step(action[0, 0])
+	    if args.display:
+		env.render()
             done = done or episode_length >= args.max_episode_length
             reward_sum += reward
 
@@ -96,6 +100,7 @@ def test(rank, args, shared_model):
 
             state = torch.from_numpy(state)
     except KeyboardInterrupt:
+	env.close()
 	f.close()
 	torch.save(model.state_dict(), ckpt_path)
 
