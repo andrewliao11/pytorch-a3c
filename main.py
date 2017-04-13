@@ -51,6 +51,7 @@ if __name__ == '__main__':
     env = create_atari_env(args.env_name)
     shared_model = ActorCritic(
         env.observation_space.shape[0], env.action_space)
+
     shared_model.share_memory()
 
     if args.no_shared:
@@ -59,6 +60,7 @@ if __name__ == '__main__':
         optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
         optimizer.share_memory()
 
+    #train(0, args, shared_model, optimizer)
     processes = []
 
     p = mp.Process(target=test, args=(args.num_processes, args, shared_model))

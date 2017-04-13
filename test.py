@@ -27,6 +27,11 @@ def setup(args):
     ckpt_filename = args.env_name+"."+args.model_name+".pkl"
     return f, os.path.join(ckpt_dir, ckpt_filename)
 
+def normal(x, mu, sigma_sq):
+    a = ((Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
+    b = 1/(2*sigma_sq*pi).sqrt()
+    return a*b
+
 def test(rank, args, shared_model):
 
     torch.manual_seed(args.seed + rank)
@@ -54,16 +59,19 @@ def test(rank, args, shared_model):
             # Sync with the shared model
             if done:
             	model.load_state_dict(shared_model.state_dict())
-            	cx = Variable(torch.zeros(1, 256), volatile=True)
-            	hx = Variable(torch.zeros(1, 256), volatile=True)
+            	cx = Variable(torch.zeros(1, 128), volatile=True)
+            	hx = Variable(torch.zeros(1, 128), volatile=True)
             else:
             	cx = Variable(cx.data, volatile=True)
             	hx = Variable(hx.data, volatile=True)
 
-            value, logit, (hx, cx) = model(
-            	(Variable(state.unsqueeze(0), volatile=True), (hx, cx)))
-            prob = F.softmax(logit)
-            action = prob.max(1)[1].data.numpy()
+	    # for mujoco, env returns DoubleTensor
+            value, mu, sigma_sq, (hx, cx) = model(
+                (Variable(state.float().unsqueeze(0).float()), (hx, cx)))
+	    sigma_sq = F.softplus(sigma_sq)
+            eps = torch.randn(mu.size())
+            # calculate the probability
+            action = (mu + sigma_sq.sqrt()*Variable(eps)).data
 
             state, reward, done, _ = env.step(action[0, 0])
             done = done or episode_length >= args.max_episode_length
