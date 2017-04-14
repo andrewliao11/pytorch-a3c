@@ -13,7 +13,6 @@ from torchvision import datasets, transforms
 import time
 from collections import deque
 
-dir = 'ckpt'
 def setup(args):
     # logging
     log_dir = os.path.join('logs', args.model_name)
@@ -88,6 +87,7 @@ def test(rank, args, shared_model):
             	done = True
 
             if done:
+		episode_i += 1
 		if episode_i%args.save_freq == 0:
 		    torch.save(model.state_dict(), os.path.join(ckpt_dir, args.env_name+\
 				"."+args.model_name+"."+str(episode_i)+".pkl"))
@@ -100,7 +100,8 @@ def test(rank, args, shared_model):
             	episode_length = 0
             	actions.clear()
             	state = env.reset()
-            	time.sleep(60)
+		if args.task == 'train':
+            	    time.sleep(60)
 
             state = torch.from_numpy(state)
     except KeyboardInterrupt:

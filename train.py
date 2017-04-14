@@ -21,7 +21,7 @@ def ensure_shared_grads(model, shared_model):
 
 def normal(x, mu, sigma_sq):
     a = (-1*(Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
-    b = 1/(2*sigma_sq*pi).sqrt()
+    b = 1/(2*sigma_sq*pi.expand_as(sigma_sq)).sqrt()
     return a*b
 
 def train(rank, args, shared_model, optimizer=None):
@@ -68,7 +68,7 @@ def train(rank, args, shared_model, optimizer=None):
 	    # calculate the probability
 	    action = (mu + sigma_sq.sqrt()*Variable(eps)).data
 	    prob = normal(action, mu, sigma_sq)
-	    entropy = -0.5*((sigma_sq+2*pi).log()+1).sum(1)
+	    entropy = -0.5*((sigma_sq+2*pi.expand_as(sigma_sq)).log()+1)
 
             entropies.append(entropy)
             log_prob = prob.log()
@@ -114,8 +114,8 @@ def train(rank, args, shared_model, optimizer=None):
             gae = gae * args.gamma * args.tau + delta_t
 
 	    # for Mujoco, entropy loss lower to 0.0001
-            policy_loss = policy_loss - \
-                log_probs[i] * Variable(gae) - 0.0001 * entropies[i]
+            policy_loss = policy_loss - (log_probs[i]*Variable(gae).expand_as(log_probs[i])).sum() \
+					- (0.0001*entropies[i]).sum()
 
         optimizer.zero_grad()
 
