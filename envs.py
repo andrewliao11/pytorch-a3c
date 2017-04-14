@@ -13,8 +13,6 @@ def create_atari_env(env_id):
     env = gym.make(env_id)
     if len(env.observation_space.shape) > 1:
         env = Vectorize(env)
-        env = AtariRescale42x42(env)
-        env = NormalizedEnv(env)
         env = Unvectorize(env)
     return env
 
