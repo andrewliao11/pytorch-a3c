@@ -13,7 +13,7 @@ from torchvision import datasets, transforms
 import time
 from collections import deque
 
-
+dir = 'ckpt'
 def setup(args):
     # logging
     log_dir = os.path.join('logs', args.model_name)
@@ -45,7 +45,7 @@ def test(rank, args, shared_model):
     model.eval()
 
     f, ckpt_path = setup(args)
-    env = wrappers.Monitor(env, '/tmp/{}-experiment'.format(args.env_name), force=True)
+    #env = wrappers.Monitor(env, '/tmp/{}-experiment'.format(args.env_name), force=True)
     state = env.reset()
     state = torch.from_numpy(state)
     reward_sum = 0
@@ -54,6 +54,7 @@ def test(rank, args, shared_model):
     start_time = time.time()
     # a quick hack to prevent the agent from stucking
     actions = deque(maxlen=100)
+    episode_i = 0
     episode_length = 0
     try:
     	while True:
@@ -87,6 +88,9 @@ def test(rank, args, shared_model):
             	done = True
 
             if done:
+		if episode_i%args.save_freq == 0:
+		    torch.save(model.state_dict(), os.path.join(dir, 'a3c-'+\
+				args.env_name+'-'+str(episode_i)+'.pkl'))
 	    	info_str = "Time {}, episode reward {}, episode length {}".format(
                 	time.strftime("%Hh %Mm %Ss",time.gmtime(time.time() - start_time)),
                 	reward_sum, episode_length)

@@ -37,10 +37,10 @@ class ActorCritic(torch.nn.Module):
     def __init__(self, num_inputs, action_space):
         super(ActorCritic, self).__init__()
 
-	# Actor
 	self.linear1 = nn.Linear(num_inputs, 200)
         self.lstm = nn.LSTMCell(200, 128)
         num_outputs = action_space.shape[0]
+	# Actor
 	self.mu_linear = nn.Linear(128, num_outputs)
 	self.sigma_sq_linear = nn.Linear(128, num_outputs)
 	# Critic

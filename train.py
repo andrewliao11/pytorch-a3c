@@ -20,7 +20,7 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 def normal(x, mu, sigma_sq):
-    a = ((Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
+    a = (-1*(Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
     b = 1/(2*sigma_sq*pi).sqrt()
     return a*b
 
@@ -113,8 +113,9 @@ def train(rank, args, shared_model, optimizer=None):
                 values[i + 1].data - values[i].data
             gae = gae * args.gamma * args.tau + delta_t
 
+	    # for Mujoco, entropy loss lower to 0.0001
             policy_loss = policy_loss - \
-                log_probs[i] * Variable(gae) - 0.01 * entropies[i]
+                log_probs[i] * Variable(gae) - 0.0001 * entropies[i]
 
         optimizer.zero_grad()
 
