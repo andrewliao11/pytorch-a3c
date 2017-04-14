@@ -43,6 +43,7 @@ parser.add_argument('--env-name', default='PongDeterministic-v3', metavar='ENV',
 parser.add_argument('--no-shared', default=False, metavar='O',
                     help='use an optimizer without shared momentum.')
 parser.add_argument('--display', type=bool, default=False)
+parser.add_argument('--save_freq', type=int, default=20)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
 
     env = create_atari_env(args.env_name)
+   
     shared_model = ActorCritic(
         env.observation_space.shape[0], env.action_space)
 
@@ -62,6 +64,7 @@ if __name__ == '__main__':
         optimizer.share_memory()
 
     #train(0, args, shared_model, optimizer)
+    
     processes = []
 
     p = mp.Process(target=test, args=(args.num_processes, args, shared_model))
@@ -74,3 +77,4 @@ if __name__ == '__main__':
         processes.append(p)
     for p in processes:
         p.join()
+    

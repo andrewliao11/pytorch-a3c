@@ -26,7 +26,7 @@ def setup(args):
     if not os.path.exists(ckpt_dir):
         os.mkdir(ckpt_dir)
     ckpt_filename = args.env_name+"."+args.model_name+".pkl"
-    return f, os.path.join(ckpt_dir, ckpt_filename)
+    return (f, os.path.join(ckpt_dir, ckpt_filename)), (log_dir, ckpt_dir)
 
 def normal(x, mu, sigma_sq):
     a = ((Variable(x)-mu).pow(2)/(2*sigma_sq)).exp()
@@ -44,7 +44,7 @@ def test(rank, args, shared_model):
 
     model.eval()
 
-    f, ckpt_path = setup(args)
+    (f, ckpt_path), (log_dir, ckpt_dir) = setup(args)
     #env = wrappers.Monitor(env, '/tmp/{}-experiment'.format(args.env_name), force=True)
     state = env.reset()
     state = torch.from_numpy(state)
@@ -89,8 +89,8 @@ def test(rank, args, shared_model):
 
             if done:
 		if episode_i%args.save_freq == 0:
-		    torch.save(model.state_dict(), os.path.join(dir, 'a3c-'+\
-				args.env_name+'-'+str(episode_i)+'.pkl'))
+		    torch.save(model.state_dict(), os.path.join(ckpt_dir, args.env_name+\
+				"."+args.model_name+"."+str(episode_i)+".pkl"))
 	    	info_str = "Time {}, episode reward {}, episode length {}".format(
                 	time.strftime("%Hh %Mm %Ss",time.gmtime(time.time() - start_time)),
                 	reward_sum, episode_length)
